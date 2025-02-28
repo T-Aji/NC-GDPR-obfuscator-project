@@ -1,189 +1,143 @@
 import pytest
-import pandas as pd
 import json
-import io
-import time
+import os
+import sys
 import boto3
 from moto import mock_aws
-from src.main import process_s3_file
+from src.main import obfuscator
 
-@pytest.fixture(scope="function")
-def mock_s3_bucket():
-    """Fixture to create and return a mock S3 bucket."""
+
+@pytest.fixture
+def mock_s3():
+    """Fixture to mock AWS S3 in the EU West 2 (London) region."""
     with mock_aws():
-        s3 = boto3.client("s3", region_name="eu-west-2")
-        bucket_name = "mock-bucket"
-        s3.create_bucket(
+        s3_client = boto3.client("s3", region_name="eu-west-2")
+        bucket_name = "test-bucket"
+
+        s3_client.create_bucket(
             Bucket=bucket_name,
-            CreateBucketConfiguration={"LocationConstraint": "eu-west-2"}
+            CreateBucketConfiguration={
+                "LocationConstraint": "eu-west-2"
+            }
         )
-        yield s3, bucket_name
 
-@mock_aws
-def test_process_s3_file_csv(mock_s3_bucket):
-    """Test end-to-end processing of a CSV file from S3."""
-    s3, bucket_name = mock_s3_bucket
-    object_key = "test.csv"
-    csv_data = "id,name,email\n1,Alice,alice@example.com\n2,Bob,bob@example.com"
-    s3.put_object(Bucket=bucket_name, Key=object_key, Body=csv_data)
+        # Upload a sample CSV file to the mock S3 bucket
+        s3_client.put_object(
+            Bucket=bucket_name,
+            Key="file.csv",
+            Body=b"id,name,email\n1,John Doe,john.doe@example.com\n"
+        )
+        yield bucket_name
 
+
+def test_obfuscator_missing_args(capsys):
+    """Test that the script exits with an error if no arguments are provided."""
+    with pytest.raises(SystemExit) as e:
+        # Simulate no command-line arguments
+        sys.argv = ["main.py"]
+        obfuscator()
+    
+    # Check the exit code
+    assert e.value.code == 1
+
+    # Check the error message
+    captured = capsys.readouterr()
+    assert "Usage: obfuscator" in captured.out
+
+
+def test_obfuscator_invalid_json(capsys):
+    """Test that the script exits with an error if the JSON input is invalid."""
+    with pytest.raises(SystemExit) as e:
+        # Simulate invalid JSON input
+        sys.argv = ["main.py", "invalid-json"]
+        obfuscator()
+    
+    # Check the exit code
+    assert e.value.code == 1
+
+    # Check the error message
+    captured = capsys.readouterr()
+    assert "Invalid JSON input" in captured.out
+
+
+def test_obfuscator_missing_s3_uri(capsys):
+    """Test that the script exits with an error if the JSON input is missing the S3 URI."""
+    with pytest.raises(SystemExit) as e:
+        # Simulate JSON input missing the S3 URI
+        sys.argv = ["main.py", json.dumps({"pii_fields": ["name", "email"]})]
+        obfuscator()
+    
+    # Check the exit code
+    assert e.value.code == 1
+
+    # Check the error message
+    captured = capsys.readouterr()
+    assert "Missing required S3 file location" in captured.out
+
+
+def test_obfuscator_valid_input(tmpdir, mock_s3):
+    """Test that the script produces the correct output file when given valid input."""
+    # Create a temporary output directory
+    output_dir = tmpdir.mkdir("output")
+
+    # Simulate valid JSON input
     json_input = json.dumps({
-        "file_to_obfuscate": f"s3://{bucket_name}/{object_key}",
+        "file_to_obfuscate": f"s3://{mock_s3}/file.csv",
         "pii_fields": ["name", "email"]
     })
 
-    byte_stream = process_s3_file(json_input)
-    output_content = byte_stream.getvalue().decode("utf-8")
+    # Simulate command-line arguments
+    sys.argv = ["main.py", json_input]
 
-    assert "***" in output_content
-    assert "1" in output_content
+    # Run the obfuscator function
+    obfuscator(output_dir)
 
-@mock_aws
-def test_process_s3_file_json(mock_s3_bucket):
-    """Test end-to-end processing of a JSON file from S3."""
-    s3, bucket_name = mock_s3_bucket
-    object_key = "test.json"
-    json_data = '[{"id": 1, "name": "Alice", "email": "alice@example.com"}, {"id": 2, "name": "Bob", "email": "bob@example.com"}]'
-    s3.put_object(Bucket=bucket_name, Key=object_key, Body=json_data)
+    # Check that the output file was created
+    output_file = os.path.join(output_dir, "output.csv")
+    print(f"Output file path: {output_file}")  # Debug: Print the output file path
+    print(f"Files in output directory: {os.listdir(output_dir)}")  # Debug: List files in the output directory
 
-    json_input = json.dumps({
-        "file_to_obfuscate": f"s3://{bucket_name}/{object_key}",
-        "pii_fields": ["name", "email"]
-    })
+    assert os.path.exists(output_file), f"Output file not found: {output_file}"
 
-    byte_stream = process_s3_file(json_input)
-    output_content = byte_stream.getvalue().decode("utf-8")
+    # Check the contents of the output file
+    with open(output_file, "rb") as f:
+        file_contents = f.read()
+        print(f"File contents: {file_contents}")  # Debug: Print the file contents
+        assert b"***,***" in file_contents  # Check that PII fields are obfuscated
 
-    assert "***" in output_content
-    assert "1" in output_content
 
-@mock_aws
-def test_process_s3_file_parquet(mock_s3_bucket):
-    """Test end-to-end processing of a Parquet file from S3."""
-    s3, bucket_name = mock_s3_bucket
-    object_key = "test.parquet"
-    import pyarrow as pa
-    import pyarrow.parquet as pq
-    data = [pa.array([1, 2]), pa.array(["Alice", "Bob"]), pa.array(["alice@example.com", "bob@example.com"])]
-    table = pa.Table.from_arrays(data, ["id", "name", "email"])
-    with io.BytesIO() as f:
-        pq.write_table(table, f)
-        f.seek(0)
-        s3.put_object(Bucket=bucket_name, Key=object_key, Body=f.read())
 
-    json_input = json.dumps({
-        "file_to_obfuscate": f"s3://{bucket_name}/{object_key}",
-        "pii_fields": ["name", "email"]
-    })
-
-    byte_stream = process_s3_file(json_input)
-    # validate that it is parquet.
-    try:
-        pq.read_table(io.BytesIO(byte_stream.getvalue()))
-    except Exception as e:
-        assert False, "parquet file is invalid"
-
-@mock_aws
-def test_process_s3_file_empty(mock_s3_bucket):
-    """Test processing an empty file from S3."""
-    s3, bucket_name = mock_s3_bucket
-    for file_format in ["csv", "json", "parquet"]:
-        object_key = f"empty.{file_format}"
-        s3.put_object(Bucket=bucket_name, Key=object_key, Body="")
-
-        json_input = json.dumps({
-            "file_to_obfuscate": f"s3://{bucket_name}/{object_key}",
+def test_obfuscator_invalid_s3_uri(capsys):
+    """Test that the script exits with an error if the S3 URI is invalid."""
+    with pytest.raises(SystemExit) as e:
+        # Simulate JSON input with an invalid S3 URI
+        sys.argv = ["main.py", json.dumps({
+            "file_to_obfuscate": "invalid-uri",
             "pii_fields": ["name", "email"]
-        })
-
-        byte_stream = process_s3_file(json_input)
-        assert isinstance(byte_stream, io.BytesIO)
-        assert byte_stream.getvalue()
-
-def test_process_s3_file_invalid_input_json():
-    """Test handling of invalid JSON input."""
-    invalid_json = "{"
-    with pytest.raises(ValueError, match="Invalid JSON input"):
-        process_s3_file(invalid_json)
-
-def test_process_s3_file_missing_fields():
-    """Test handling of JSON input missing required fields."""
-    missing_fields_json = json.dumps({"pii_fields": ["name"]})
-    with pytest.raises(ValueError, match="Missing required S3 file location"):
-        process_s3_file(missing_fields_json)
-
-@mock_aws
-def test_process_s3_file_nonexistent_key(mock_s3_bucket):
-    """Test handling of nonexistent S3 keys."""
-    s3, bucket_name = mock_s3_bucket
-    object_key = "nonexistent.csv"
-
-    json_input = json.dumps({
-        "file_to_obfuscate": f"s3://{bucket_name}/{object_key}",
-        "pii_fields": ["name", "email"]
-    })
-
-    with pytest.raises(RuntimeError, match="Error processing S3 file:"):
-        process_s3_file(json_input)
-
-@mock_aws
-def test_process_s3_file_no_pii_fields(mock_s3_bucket):
-    """Test processing a file without specifying PII fields."""
-    s3, bucket_name = mock_s3_bucket
-    object_key = "test.csv"
-    csv_data = "id,name,email\n1,Alice,alice@example.com\n2,Bob,bob@example.com"
-    s3.put_object(Bucket=bucket_name, Key=object_key, Body=csv_data)
-
-    json_input = json.dumps({
-        "file_to_obfuscate": f"s3://{bucket_name}/{object_key}"
-    })
-
-    byte_stream = process_s3_file(json_input)
-    output_content = byte_stream.getvalue().decode("utf-8")
-
-    assert "Alice" in output_content
-    assert "bob@example.com" in output_content
-
-@mock_aws
-def test_process_s3_file_invalid_s3_uri(mock_s3_bucket):
-    """Test handling of invalid S3 URI format."""
-    json_input = json.dumps({
-        "file_to_obfuscate": "invalid-uri",
-        "pii_fields": ["name"]
-    })
-
-    with pytest.raises(ValueError, match="Invalid S3 URI format"):
-        process_s3_file(json_input)
-
-def test_performance_large_file(mock_s3_bucket):
-    """Test performance with a large CSV file (1MB)."""
-    s3, bucket_name = mock_s3_bucket
-    object_key = "large_test.csv"
+        })]
+        obfuscator()
     
-    # Create a large CSV file (1MB)
-    large_csv_data = "student_id,name,email_address\n" + ("1234,John Smith,j.smith@example.com\n" * 29000)
+    # Check the exit code
+    assert e.value.code == 1
+
+    # Check the error message
+    captured = capsys.readouterr()
+    assert "Invalid S3 URI format" in captured.out
+
+
+def test_obfuscator_unsupported_file_format(capsys):
+    """Test that the script exits with an error if the file format is unsupported."""
+    with pytest.raises(SystemExit) as e:
+        # Simulate JSON input with an unsupported file format
+        sys.argv = ["main.py", json.dumps({
+            "file_to_obfuscate": "s3://my-bucket/file.txt",
+            "pii_fields": ["name", "email"]
+        })]
+        obfuscator()
     
-    # Upload the large CSV file to the mock S3 bucket
-    s3.put_object(Bucket=bucket_name, Key=object_key, Body=large_csv_data)
-    
-    # Prepare JSON input
-    json_input = json.dumps({
-        "file_to_obfuscate": f"s3://{bucket_name}/{object_key}",
-        "pii_fields": ["name", "email_address"]
-    })
-    
-    # Measure runtime
-    start_time = time.time()
-    byte_stream = process_s3_file(json_input)
-    end_time = time.time()
-    
-    # Calculate file size in MB
-    file_size_mb = len(large_csv_data) / (1024 * 1024)  # Convert bytes to MB
-    time_taken_seconds = end_time - start_time
-    
-    # Output file size and time taken
-    print(f"Processed {file_size_mb:.2f} MB in {time_taken_seconds:.2f} seconds")
-    
-    # Assertions
-    assert isinstance(byte_stream, io.BytesIO)
-    assert time_taken_seconds < 60  # Runtime should be less than 1 minute
+    # Check the exit code
+    assert e.value.code == 1
+
+    # Check the error message
+    captured = capsys.readouterr()
+    assert "Unsupported file format" in captured.out

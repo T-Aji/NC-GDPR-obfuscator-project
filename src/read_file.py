@@ -40,7 +40,7 @@ def read_file(bucket_name: str, object_key: str, file_format: str) -> pd.DataFra
             return pd.read_json(file_buffer)
         elif file_format == "parquet":
             return pyarrow.parquet.read_table(file_buffer).to_pandas()
-    except (EmptyDataError, pyarrow.lib.ArrowInvalid, ValueError): # Add ValueError here
+    except (EmptyDataError, pyarrow.lib.ArrowInvalid, ValueError): 
         logger.warning(f"Empty {file_format} file: {bucket_name}/{object_key}")
         return pd.DataFrame()
     except ClientError as e:
