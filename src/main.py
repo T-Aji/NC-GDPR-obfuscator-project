@@ -1,12 +1,16 @@
 import sys
 import json
 import os
-from .process_file import process_s3_file  
+from .process_file import process_s3_file
+
 
 def obfuscator(output_dir=None):
     """Entry point for the CLI."""
     if len(sys.argv) != 2:
-        print("Usage: obfuscator '{\"file_to_obfuscate\": \"s3://my-bucket/file.csv\", \"pii_fields\": [\"name\", \"email\"]}'")
+        print(
+            'Usage: obfuscator \'{"file_to_obfuscate": "s3://my-bucket/file.csv", '
+            '"pii_fields": ["name", "email"]}\''
+        )
         sys.exit(1)
 
     json_input = sys.argv[1]  # Get the JSON input from the command line.
@@ -32,6 +36,7 @@ def obfuscator(output_dir=None):
     except Exception as e:
         print(f"Error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     obfuscator()

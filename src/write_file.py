@@ -1,16 +1,17 @@
 import io
 import pandas as pd
 
+
 def write_file(dataframe: pd.DataFrame, file_format: str) -> io.BytesIO:
     """Convert a DataFrame to a byte stream in the specified format.
-    
+
     Args:
         dataframe (pd.DataFrame): The DataFrame to convert.
         file_format (str): The format to convert to (csv, json, parquet).
-    
+
     Returns:
         io.BytesIO: The byte stream of the converted DataFrame.
-    
+
     Raises:
         ValueError: If the output format is unsupported.
         RuntimeError: If there is an error writing to bytes.
@@ -26,7 +27,7 @@ def write_file(dataframe: pd.DataFrame, file_format: str) -> io.BytesIO:
             dataframe.to_parquet(buffer, index=False)
         else:
             raise ValueError(f"Unsupported output format: {file_format}")
-        
+
         buffer.seek(0)
         return buffer
     except Exception as e:
