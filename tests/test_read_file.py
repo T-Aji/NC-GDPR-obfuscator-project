@@ -37,9 +37,7 @@ def test_read_file_csv(mock_s3_bucket):
     s3, bucket_name = mock_s3_bucket
     object_key = "test.csv"
 
-    csv_content = """
-    name,email,age\nAlice,alice@example.com,25\nBob,bob@example.com,30
-    """
+    csv_content = "name,email,age\nAlice,alice@example.com,25\nBob,bob@example.com,30"
     s3.put_object(Bucket=bucket_name, Key=object_key, Body=csv_content)
 
     df = read_file(bucket_name, object_key, "csv")
