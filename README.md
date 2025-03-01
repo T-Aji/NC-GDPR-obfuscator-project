@@ -23,7 +23,7 @@ A general-purpose tool to process data being ingested into AWS and intercept per
 ### Steps
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/NC-GDPR-obfuscator-project.git
+   git clone https://github.com/T-Aji/NC-GDPR-obfuscator-project.git
    cd NC-GDPR-obfuscator-project
    ```
 
