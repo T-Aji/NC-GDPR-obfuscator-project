@@ -1,168 +1,166 @@
-# NC-GDPR-Obfuscator-Project
+# GDPR Obfuscator
 
-A general-purpose tool to process data being ingested into AWS and intercept personally identifiable information (PII). This tool ensures compliance with GDPR and other data protection regulations by obfuscating sensitive fields in datasets before they are stored or processed further.
+The **GDPR Obfuscator** is a Python library designed to help you obfuscate personally identifiable information (PII) in files stored in AWS S3. It supports CSV, JSON, and Parquet file formats and ensures compliance with GDPR requirements by replacing sensitive data with `***`.
 
----
-
-## **Features**
-- **PII Obfuscation**: Automatically detects and obfuscates specified PII fields (e.g., email, phone numbers) in datasets.
-- **Multi-Format Support**: Works with CSV, JSON, and Parquet file formats.
-- **AWS S3 Integration**: Seamlessly reads and writes files from/to AWS S3.
-- **Command-Line Interface (CLI)**: Easy-to-use CLI for processing files locally or in automated workflows.
-- **Customizable Obfuscation**: Define which fields to obfuscate via a JSON configuration.
+## Features
+- **Obfuscation of PII**: Replace specified fields in your data with `***`.
+- **Multiple File Formats**: Supports CSV (MVP), JSON, and Parquet files.
+- **AWS S3 Integration**: Seamlessly reads and writes files from/to S3 buckets.
+- **CLI Support**: Includes a command-line interface for easy integration into workflows.
+- **Modular Design**: Easily extendable to support additional file formats or obfuscation methods.
 
 ---
 
-## **Installation**
+## Installation
 
-### Prerequisites
-- Python 3.8 or higher
-- AWS CLI configured with valid credentials
-- Required Python packages: `boto3`, `pandas`, `pyarrow`
+You can install the GDPR Obfuscator via `pip`:
 
-### Steps
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/T-Aji/NC-GDPR-obfuscator-project.git
-   cd NC-GDPR-obfuscator-project
-   ```
+```bash
+pip install obfuscator
+```
 
-2. Install the required dependencies:
+Alternatively, you can install it directly from the source:
+
+```bash
+git clone https://github.com/T-Aji/NC-GDPR-obfuscator-project.git
+cd NC-GDPR-obfuscator-project
+pip install .
+```
+
+---
+
+## Usage
+
+### As a Python Library
+
+You can use the GDPR Obfuscator as a library in your Python code:
+
+```python
+from obfuscator import process_s3_file
+
+# JSON input specifying the S3 file and PII fields
+json_input = {
+    "file_to_obfuscate": "s3://my-bucket/path/to/file.csv",
+    "pii_fields": ["name", "email"]
+}
+
+# Process the file and get the obfuscated byte stream
+output_bytes = process_s3_file(json.dumps(json_input))
+
+# Save the obfuscated file to a new S3 location
+import boto3
+s3_client = boto3.client("s3")
+s3_client.put_object(Bucket="my-bucket", Key="path/to/obfuscated_file.csv", Body=output_bytes)
+```
+
+### As a Command-Line Tool
+
+The GDPR Obfuscator also includes a CLI for easy integration into scripts or workflows:
+
+```bash
+obfuscator '{"file_to_obfuscate": "s3://my-bucket/path/to/file.csv", "pii_fields": ["name", "email"]}'
+```
+
+The obfuscated file will be saved locally as `output.csv` (or the appropriate format based on the input file).
+
+---
+
+## Configuration
+
+### Input JSON Format
+
+The tool expects a JSON input with the following structure:
+
+```json
+{
+    "file_to_obfuscate": "s3://my-bucket/path/to/file.csv",
+    "pii_fields": ["field1", "field2"]
+}
+```
+
+- **`file_to_obfuscate`**: The S3 URI of the file to process.
+- **`pii_fields`**: A list of fields to obfuscate.
+
+### AWS Credentials
+
+The tool uses the `boto3` library to interact with AWS S3. Ensure your AWS credentials are configured using one of the following methods:
+- AWS CLI: Run `aws configure` and provide your credentials.
+- Environment variables: Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+- IAM roles: If running on AWS infrastructure (e.g., EC2, Lambda), attach an IAM role with the necessary permissions.
+
+---
+
+## Testing
+
+The GDPR Obfuscator includes a suite of unit tests to ensure functionality and reliability. To run the tests:
+
+1. Install the development dependencies:
    ```bash
    pip install -r requirements.txt
    ```
 
-3. Ensure your AWS credentials are configured:
+2. Run the tests using `pytest`:
    ```bash
-   aws configure
+   pytest tests/
    ```
+
+### Example Test Cases
+- **Input Validation**: Ensures invalid inputs are handled gracefully.
+- **Obfuscation Logic**: Verifies that PII fields are correctly replaced with `***`.
+- **File Formats**: Tests CSV, JSON, and Parquet file handling.
 
 ---
 
-## **Usage**
+## Contributing
 
-### **Command-Line Interface (CLI)**
+We welcome contributions to the GDPR Obfuscator! Here’s how you can help:
 
-The tool provides a CLI for processing files. Below are the available commands and options:
+1. **Report Issues**: If you find a bug or have a feature request, please open an issue on GitHub.
+2. **Submit Pull Requests**: Fork the repository, make your changes, and submit a pull request.
+3. **Improve Documentation**: Help us improve the README, docstrings, or other documentation.
 
-#### **Process a File from S3**
-```bash
-python s3_pii_obfuscator.py --input <input_json_or_file> --output <output_file_path>
-```
-
-- `--input`: JSON input as a string or path to a JSON file. The JSON should contain:
-  - `file_to_obfuscate`: The S3 URI of the file to process (e.g., `s3://my-bucket/path/to/file.csv`).
-  - `pii_fields`: A list of fields to obfuscate (e.g., `["email", "phone"]`).
-
-- `--output`: The path where the processed file will be saved.
-
-#### **Example 1: JSON Input as a String**
-```bash
-python s3_pii_obfuscator.py \
-    --input '{"file_to_obfuscate": "s3://my-bucket/path/to/file.csv", "pii_fields": ["email", "phone"]}' \
-    --output output.csv
-```
-
-#### **Example 2: JSON Input from a File**
-1. Create a JSON file, e.g., `input.json`:
-   ```json
-   {
-       "file_to_obfuscate": "s3://my-bucket/path/to/file.csv",
-       "pii_fields": ["email", "phone"]
-   }
-   ```
-
-2. Run the script:
+### Development Setup
+1. Clone the repository:
    ```bash
-   python s3_pii_obfuscator.py --input input.json --output output.csv
+   git clone https://github.com/your-repo/gdpr-obfuscator.git
+   cd gdpr-obfuscator
+   ```
+
+2. Install the package in editable mode:
+   ```bash
+   pip install -e .
+   ```
+
+3. Install development dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run tests and linting:
+   ```bash
+   pytest tests/
+   flake8 src/
    ```
 
 ---
 
-### **Programmatic Usage**
+## License
 
-You can also use the tool programmatically in your Python scripts. Below is an example:
-
-```python
-from s3_pii_obfuscator import process_s3_file
-
-# Define the JSON input
-json_input = {
-    "file_to_obfuscate": "s3://my-bucket/path/to/file.csv",
-    "pii_fields": ["email", "phone"]
-}
-
-# Process the file
-byte_stream = process_s3_file(json.dumps(json_input))
-
-# Save the output to a file
-with open("output.csv", "wb") as f:
-    f.write(byte_stream.getvalue())
-```
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
 ---
 
-## **Configuration**
+## Support
 
-### **Input JSON Format**
-The input JSON should have the following structure:
-```json
-{
-    "file_to_obfuscate": "s3://my-bucket/path/to/file.csv",
-    "pii_fields": ["email", "phone"]
-}
-```
-
-- `file_to_obfuscate`: The S3 URI of the file to process.
-- `pii_fields`: A list of fields to obfuscate.
+For questions, issues, or feedback, please open an issue on the [GitHub repository](https://github.com/your-repo/gdpr-obfuscator).
 
 ---
 
-## **Supported File Formats**
-- **CSV**: Comma-separated values.
-- **JSON**: Line-delimited JSON (JSONL).
-- **Parquet**: Columnar storage format.
+## Acknowledgments
+
+- **Author**: Tolu Ajibade
+- **Inspiration**: GDPR compliance requirements for data anonymization.
+- **Tools Used**: `boto3`, `pandas`, `pyarrow`, `pytest`.
 
 ---
 
-## **Contributing**
-
-We welcome contributions! If you'd like to contribute, please follow these steps:
-1. Fork the repository.
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes and push to your fork.
-4. Submit a pull request with a detailed description of your changes.
-
----
-
-## **License**
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
----
-
-## **Acknowledgments**
-- Thanks to the open-source community for providing the tools and libraries that made this project possible.
-- Special thanks to the AWS team for their excellent documentation and SDKs.
-
----
-
-## **Contact**
-
-For questions, feedback, or support, please contact:
-- **Your Name**: [your.email@example.com](mailto:your.email@example.com)
-- **Project Repository**: [https://github.com/your-username/NC-GDPR-obfuscator-project](https://github.com/your-username/NC-GDPR-obfuscator-project)
-
----
-
-## **Changelog**
-
-### **v1.0.0 (Initial Release)**
-- Initial release of the NC-GDPR Obfuscator.
-- Supports CSV, JSON, and Parquet file formats.
-- Integrates with AWS S3 for seamless file processing.
-- Provides a CLI for easy usage.
-
----
-
-Thank you for using the NC-GDPR Obfuscator! We hope it helps you achieve GDPR compliance and secure your data effectively. 🚀
