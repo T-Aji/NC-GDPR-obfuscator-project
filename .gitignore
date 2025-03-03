@@ -169,9 +169,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
-Invoice
 .flake8
 .pre-commit-config.yaml
-another readme.txt
-project outline.txt
-S3 File Processing and PII Obfuscation.md
