@@ -122,8 +122,8 @@ We welcome contributions to the GDPR Obfuscator! Here’s how you can help:
 ### Development Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-repo/gdpr-obfuscator.git
-   cd gdpr-obfuscator
+   git clone https://github.com/T-Aji/NC-GDPR-obfuscator-project.git
+   cd NC-GDPR-obfuscator-project
    ```
 
 2. Install the package in editable mode:
@@ -152,15 +152,8 @@ This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) f
 
 ## Support
 
-For questions, issues, or feedback, please open an issue on the [GitHub repository](https://github.com/your-repo/gdpr-obfuscator).
+For questions, issues, or feedback, please open an issue on the [GitHub repository](https://github.com/T-Aji/NC-GDPR-obfuscator-project.).
 
 ---
 
-## Acknowledgments
-
-- **Author**: Tolu Ajibade
-- **Inspiration**: GDPR compliance requirements for data anonymization.
-- **Tools Used**: `boto3`, `pandas`, `pyarrow`, `pytest`.
-
----
 
