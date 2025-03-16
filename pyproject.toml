@@ -18,7 +18,7 @@ classifiers = [
 ]
 
 [project.scripts]
-obfuscator = "main:obfuscator"
+obfuscator = "obfuscator.main:obfuscator"
 
 [tool.setuptools.packages.find]
 where = ["src"]
