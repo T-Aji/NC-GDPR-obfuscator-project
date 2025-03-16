@@ -16,20 +16,16 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-]
 
 [project.scripts]
 obfuscator = "src.main:obfuscator"
 
-[project.urls]
-
-[tool.setuptools]
-package-dir = { "" = "src" }
-packages = { include = ["src", "src.*", "tests", "tests.*"] }
+[tool.setuptools.packages.find]
+where = ["src"]  # Directory to search for packages
+include = ["src", "src.*", "tests", "tests.*"]  # Packages to include
 
 [tool.setuptools.package-data]
-obfuscator = ["data/*.json", "config/*.ini"]
+obfuscator = ["data/*.json", "config/*.ini", "requirements.txt"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
