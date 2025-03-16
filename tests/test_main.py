@@ -9,7 +9,7 @@ from obfuscator.main import obfuscator
 
 @pytest.fixture
 def mock_s3():
-    """Fixture to mock AWS S3 in the EU West 2 (London) region."""
+    """Fixture to mock AWS S3 bucket."""
     with mock_aws():
         s3_client = boto3.client("s3", region_name="eu-west-2")
         bucket_name = "test-bucket"
