@@ -16,7 +16,7 @@ The **GDPR Obfuscator** is a Python library designed to help you obfuscate perso
 You can install the GDPR Obfuscator via `pip`:
 
 ```bash
-pip install obfuscator
+pip install git+https://github.com/T-Aji/NC-GDPR-obfuscator-project.git
 ```
 
 Alternatively, you can install it directly from the source:

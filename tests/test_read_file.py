@@ -3,7 +3,7 @@ import pandas as pd
 import io
 import boto3
 from moto import mock_aws
-from src.read_file import read_file
+from obfuscator.read_file import read_file
 
 
 @pytest.fixture(scope="function")

@@ -5,7 +5,7 @@ import json
 import pandas as pd
 import boto3
 from moto import mock_aws
-from src.main import process_s3_file
+from obfuscator.main import process_s3_file
 
 # Fixture to create test files
 

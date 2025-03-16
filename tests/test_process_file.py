@@ -3,7 +3,7 @@ import json
 import io
 import boto3
 from moto import mock_aws
-from src.main import process_s3_file
+from obfuscator.main import process_s3_file
 
 
 @pytest.fixture(scope="function")

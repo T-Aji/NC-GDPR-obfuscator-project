@@ -4,7 +4,7 @@ import os
 import sys
 import boto3
 from moto import mock_aws
-from src.main import obfuscator
+from obfuscator.main import obfuscator
 
 
 @pytest.fixture

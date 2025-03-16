@@ -1,6 +1,6 @@
 import pytest
 import pandas as pd
-from src.obfuscate_pii import obfuscate_pii
+from obfuscator.obfuscate_pii import obfuscate_pii
 
 
 @pytest.fixture

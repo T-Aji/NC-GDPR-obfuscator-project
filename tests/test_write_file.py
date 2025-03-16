@@ -2,8 +2,8 @@ import pytest
 import pandas as pd
 import pyarrow.parquet as pq
 import io
-from src.write_file import write_file
-from src.obfuscate_pii import obfuscate_pii
+from obfuscator.write_file import write_file
+from obfuscator.obfuscate_pii import obfuscate_pii
 
 
 @pytest.fixture

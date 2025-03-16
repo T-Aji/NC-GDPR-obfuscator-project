@@ -1,7 +1,7 @@
 import sys
 import json
 import os
-from .process_file import process_s3_file
+from obfuscator.process_file import process_s3_file
 
 
 def obfuscator(output_dir=None):

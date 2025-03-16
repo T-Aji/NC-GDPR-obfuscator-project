@@ -1,9 +1,9 @@
 import json
 import io
 import logging
-from .read_file import read_file
-from .obfuscate_pii import obfuscate_pii
-from .write_file import write_file
+from obfuscator.read_file import read_file
+from obfuscator.obfuscate_pii import obfuscate_pii
+from obfuscator.write_file import write_file
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
