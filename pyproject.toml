@@ -18,11 +18,11 @@ classifiers = [
 ]
 
 [project.scripts]
-obfuscator = "src.main:obfuscator"
+obfuscator = "main:obfuscator"
 
 [tool.setuptools.packages.find]
-where = ["src"]  # Directory to search for packages
-include = ["src", "src.*", "tests", "tests.*"]  # Packages to include
+where = ["src"]
+include = ["*"]  # Automatically finds all valid packages
 
 [tool.setuptools.package-data]
 obfuscator = ["data/*.json", "config/*.ini", "requirements.txt"]
