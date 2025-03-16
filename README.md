@@ -109,6 +109,8 @@ The GDPR Obfuscator includes a suite of unit tests to ensure functionality and r
 - **Obfuscation Logic**: Verifies that PII fields are correctly replaced with `***`.
 - **File Formats**: Tests CSV, JSON, and Parquet file handling.
 
+![Tests](https://github.com/T-Aji/NC-GDPR-obfuscator-project/actions/workflows/test.yml/badge.svg)
+
 ## Performance
 The tool is able to handle files up to 1MB with a runtime of less than 1 minute. Performance tests are included in the test suite to validate this requirement.
 ---
