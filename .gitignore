@@ -171,3 +171,5 @@ cython_debug/
 .pypirc
 .flake8
 .pre-commit-config.yaml
+REDME.md
+requirementss.txt
