@@ -165,7 +165,7 @@ To process files in S3, ensure your IAM role or user has the following permissio
 - To run bandit security scans: bandit -r src/ -x tests/
 - To run safety dependency checks: safety scan -r requirements.txt
 
-![Tests](about:sanitized)
+[![Tests](https://img.shields.io/github/actions/workflow/status/T-Aji/NC-GDPR-obfuscator-project/tests.yml?label=tests)](https://github.com/T-Aji/NC-GDPR-obfuscator-project/actions)
 
 ## Deployment
 
