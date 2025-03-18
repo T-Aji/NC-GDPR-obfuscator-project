@@ -47,4 +47,7 @@ jobs:
         run: bandit -r src/ -x tests/
 
       - name: Run Safety
-        run: safety scan -r requirements.txt --full-report
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+        
