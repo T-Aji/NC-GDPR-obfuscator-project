@@ -1,4 +1,3 @@
-# .github/workflows/test.yml
 name: Test
 
 on: [push, pull_request]
@@ -28,3 +27,24 @@ jobs:
       - name: Run tests
         run: |
           python -m pytest
+
+  security:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt bandit safety
+
+      - name: Run Bandit
+        run: bandit -r src/ -x tests/
+
+      - name: Run Safety
+        run: safety scan -r requirements.txt
