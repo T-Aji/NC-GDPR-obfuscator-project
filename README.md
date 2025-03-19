@@ -96,10 +96,12 @@ with open("path/to/obfuscated_file.csv", "wb") as f:
 The GDPR Obfuscator also includes a CLI for easy integration into scripts or workflows:
 
 ```bash
-obfuscator '{"file_to_obfuscate": "s3://my-bucket/path/to/file.csv", "pii_fields": ["name", "email"], "output_s3": "s3://my-bucket/obfuscated_file.csv"}'
+output=$(obfuscator '{"file_to_obfuscate": "s3://my-bucket/data/input.csv", "pii_fields": ["user_name", "email"]}')
+echo "$output" # prints the bytestream
+decoded_output=$(echo "$output" | base64 -d) # if the output is base64 encoded
+echo "$decoded_output" # prints the decoded bytestream
+echo "$output" > output.csv # saves the bytestream to a file called output.csv
 ```
-
-The obfuscated file will be saved in the specified S3 location or locally as `output.csv` (or the appropriate format based on the input file) in the current working directory.
 
 ## Configuration
 
@@ -108,14 +110,12 @@ The obfuscated file will be saved in the specified S3 location or locally as `ou
 ```json
 {
     "file_to_obfuscate": "s3://my-bucket/path/to/file.csv",
-    "pii_fields": ["field1", "field2"],
-    "output_s3": "s3://my-bucket/obfuscated_file.csv"
+    "pii_fields": ["field1", "field2"]
 }
 ```
 
 - **`file_to_obfuscate`**: The S3 URI of the file to process.
 - **`pii_fields`**: A list of fields to obfuscate.
-- **`output_s3`**: (Optional) The S3 URI to save the obfuscated file.
 
 ### AWS Credentials
 
@@ -151,19 +151,29 @@ To process files in S3, ensure your IAM role or user has the following permissio
     ```bash
     pytest tests/
     ```
-- Unit tests are provided, and the code has been tested for security vulnerabilities using `bandit` & `safety`.The tests use moto to mock AWS services.
-- To check code coverage: coverage run pytest --cov=obfuscator --cov-report=html tests/
+- Unit tests are provided, and the code has been tested for security vulnerabilities using `bandit` and `safety`. The tests use `moto` to mock AWS services.
+- To check code coverage:
+  ```bash
+  coverage run pytest --cov=obfuscator --cov-report=html tests/
+  ```
 
 ### Example Test Cases
 
 - **Input Validation**: Ensures invalid inputs are handled gracefully.
 - **Obfuscation Logic**: Verifies that PII fields are correctly replaced with `***`.
 - **File Formats**: Tests CSV, JSON, and Parquet file handling.
+- **Bytestream Validation**: Verifies that the obfuscator function returns a BytesIO object, and that the contents of the bytestream are correct.
 
 ### Security Testing
 
-- To run bandit security scans: bandit -r src/ -x tests/
-- To run safety dependency checks: safety scan -r requirements.txt
+- To run Bandit security scans:
+  ```bash
+  bandit -r src/ -x tests/
+  ```
+- To run Safety dependency checks:
+  ```bash
+  safety scan -r requirements.txt
+  ```
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/T-Aji/NC-GDPR-obfuscator-project/tests.yml?label=tests)](https://github.com/T-Aji/NC-GDPR-obfuscator-project/actions)
 
@@ -182,7 +192,6 @@ This tool can be deployed as an AWS Lambda function or Layer.
 2. Upload the `obfuscator_lambda.zip` to AWS Lambda.
 3. Ensure the function has the correct IAM role for S3 access.
 4. Configure any necessary environment variables for your Lambda function.
-
 
 ## Performance
 
