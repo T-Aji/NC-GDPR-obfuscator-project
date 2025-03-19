@@ -1,10 +1,9 @@
 import pytest
 import json
-import os
-import sys
 import boto3
 from moto import mock_aws
 from obfuscator.main import obfuscator
+import io
 
 
 @pytest.fixture
@@ -28,21 +27,27 @@ def mock_s3():
         yield bucket_name
 
 
-def test_obfuscator_missing_args(capsys):
+def test_obfuscator_valid_input(mock_s3):
     """
-    Test that the script exits with an error if no arguments are provided.
+    Test that the script produces the correct output when given valid input.
     """
-    with pytest.raises(SystemExit) as e:
-        # Simulate no command-line arguments
-        sys.argv = ["main.py"]
-        obfuscator()
+    # Simulate valid JSON input
+    json_input = json.dumps(
+        {
+            "file_to_obfuscate": f"s3://{mock_s3}/file.csv",
+            "pii_fields": ["name", "email"],
+        }
+    )
 
-    # Check the exit code
-    assert e.value.code == 1
+    # Run the obfuscator function
+    output_bytes = obfuscator(json_input)
 
-    # Check the error message
-    captured = capsys.readouterr()
-    assert "Usage: obfuscator" in captured.out
+    # Check the type of the output
+    assert isinstance(output_bytes, io.BytesIO)
+
+    # Check the contents of the output
+    output_content = output_bytes.getvalue()
+    assert b"***,***" in output_content  # Check PII fields are obfuscated
 
 
 def test_obfuscator_invalid_json(capsys):
@@ -51,8 +56,7 @@ def test_obfuscator_invalid_json(capsys):
     """
     with pytest.raises(SystemExit) as e:
         # Simulate invalid JSON input
-        sys.argv = ["main.py", "invalid-json"]
-        obfuscator()
+        obfuscator("invalid-json")
 
     # Check the exit code
     assert e.value.code == 1
@@ -69,8 +73,7 @@ def test_obfuscator_missing_s3_uri(capsys):
     """
     with pytest.raises(SystemExit) as e:
         # Simulate JSON input missing the S3 URI
-        sys.argv = ["main.py", json.dumps({"pii_fields": ["name", "email"]})]
-        obfuscator()
+        obfuscator(json.dumps({"pii_fields": ["name", "email"]}))
 
     # Check the exit code
     assert e.value.code == 1
@@ -80,56 +83,15 @@ def test_obfuscator_missing_s3_uri(capsys):
     assert "Missing required S3 file location" in captured.out
 
 
-def test_obfuscator_valid_input(tmpdir, mock_s3):
-    """
-    Test that the script produces the
-    correct output file when given valid input.
-    """
-    # Create a temporary output directory
-    output_dir = tmpdir.mkdir("output")
-
-    # Simulate valid JSON input
-    json_input = json.dumps(
-        {
-            "file_to_obfuscate": f"s3://{mock_s3}/file.csv",
-            "pii_fields": ["name", "email"],
-        }
-    )
-
-    # Simulate command-line arguments
-    sys.argv = ["main.py", json_input]
-
-    # Run the obfuscator function
-    obfuscator(output_dir)
-
-    # Check that the output file was created
-    output_file = os.path.join(output_dir, "output.csv")
-    # Debug: Print the output file path
-    print(f"Output file path: {output_file}")
-    # Debug: List files in the output directory
-    print(f"Files in output directory: {os.listdir(output_dir)}")
-
-    assert os.path.exists(output_file), f"Output file not found: {output_file}"
-
-    # Check the contents of the output file
-    with open(output_file, "rb") as f:
-        file_contents = f.read()
-        # Debug: Print the file contents
-        print(f"File contents: {file_contents}")
-        assert b"***,***" in file_contents  # Check PII fields are obfuscated
-
-
 def test_obfuscator_invalid_s3_uri(capsys):
     """Test that the script exits with an error if the S3 URI is invalid."""
     with pytest.raises(SystemExit) as e:
         # Simulate JSON input with an invalid S3 URI
-        sys.argv = [
-            "main.py",
+        obfuscator(
             json.dumps(
                 {"file_to_obfuscate": "invalid-uri", "pii_fields": ["name", "email"]}
-            ),
-        ]
-        obfuscator()
+            )
+        )
 
     # Check the exit code
     assert e.value.code == 1
@@ -139,22 +101,28 @@ def test_obfuscator_invalid_s3_uri(capsys):
     assert "Invalid S3 URI format" in captured.out
 
 
-def test_obfuscator_unsupported_file_format(capsys):
+def test_obfuscator_unsupported_file_format(capsys, mock_s3):
     """
     Test that the script exits with an error if the file format is unsupported.
     """
+    # Create a text file in s3
+    s3_client = boto3.client("s3", region_name="eu-west-2")
+    s3_client.put_object(
+        Bucket="test-bucket",
+        Key="file.txt",
+        Body=b"id,name,email\n1,John Doe,john.doe@example.com\n",
+    )
+
     with pytest.raises(SystemExit) as e:
         # Simulate JSON input with an unsupported file format
-        sys.argv = [
-            "main.py",
+        obfuscator(
             json.dumps(
                 {
-                    "file_to_obfuscate": "s3://my-bucket/file.txt",
+                    "file_to_obfuscate": f"s3://{mock_s3}/file.txt",
                     "pii_fields": ["name", "email"],
                 }
-            ),
-        ]
-        obfuscator()
+            )
+        )
 
     # Check the exit code
     assert e.value.code == 1
